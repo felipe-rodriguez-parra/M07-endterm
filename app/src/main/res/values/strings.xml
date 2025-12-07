@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SpaceApps</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="back">Atrás</string>
+
+    <string name="rocket_image_description">Fotografía del cohete %1$s</string>
+    <string name="status_active">Activo</string>
+    <string name="status_retired">Retirado</string>
+
+    <string name="stat_height">Altura</string>
+    <string name="stat_mass">Masa</string>
+    <string name="stat_first_flight">1er Vuelo</string>
+    <string name="cost_per_launch">%1$dM por lanzamiento</string>
+    <string name="view_details">Ver Detalles</string>
+
+    <string name="home_title">Catálogo de Cohetes</string>
+    <string name="search_rocket_placeholder">Buscar cohete por nombre</string>
+    <string name="button_logout">Cerrar Sesión</string>
+    <string name="empty_results_message">Sin resultados</string>
+
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="field_email">Email</string>
+    <string name="field_password">Contraseña</string>
+    <string name="button_forgot_password">He olvidado mis datos de acceso</string>
+    <string name="button_login">Iniciar Sesión</string>
+    <string name="error_invalid_email">Formato de email inválido</string>
+    <string name="error_short_password">Mínimo 8 caracteres</string>
+    <string name="error_invalid_credentials">Credenciales incorrectas. Vuelve a intentarlo.</string>
+
+    <string name="rocket_detail_title">Detalle</string>
+    <string name="label_description">Descripción</string>
+    <string name="data_first_flight">Primera fecha de vuelo</string>
+    <string name="data_height">Altura total</string>
+    <string name="data_mass">Masa total</string>
+    <string name="data_cost_per_launch">Coste por lanzamiento</string>
+    <string name="data_active_status">Estado</string>
+    <string name="button_more_info_wikipedia">Más info (Wikipedia)</string>
+    <string name="error_rocket_not_found">Cohete no encontrado</string>
+
+</resources>

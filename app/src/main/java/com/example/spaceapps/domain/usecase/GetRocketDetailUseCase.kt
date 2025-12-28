@@ -4,8 +4,7 @@ import com.example.spaceapps.data.repository.RocketRepository
 import com.example.spaceapps.domain.model.Rocket
 import kotlinx.coroutines.flow.Flow
 
-class GetRocketsUseCase(private val repository: RocketRepository) {
-    operator fun invoke(): Flow<List<Rocket>> = repository.observeRockets()
-    suspend fun refresh() = repository.refresh()
+class GetRocketDetailUseCase(private val repository: RocketRepository) {
+    operator fun invoke(id: String): Flow<Rocket?> = repository.observeRocket(id)
 }
 

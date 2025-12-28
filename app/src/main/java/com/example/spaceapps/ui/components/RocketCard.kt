@@ -10,8 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material3.*
@@ -32,29 +30,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.example.spaceapps.R // Necesitarás este archivo en tu proyecto
+import com.example.spaceapps.R
+import com.example.spaceapps.domain.model.Rocket
+import com.example.spaceapps.ui.theme.SpaceAppsTheme
+import com.example.spaceapps.ui.theme.SpaceTheme
 
-// Definición del modelo de datos para reflejar la API de SpaceX (simplificado)
-data class Rocket(
-    val id: String,
-    val name: String,
-    val description: String,
-    val active: Boolean,
-    val costPerLaunch: Long,
-    val firstFlight: String, // "YYYY-MM-DD"
-    val flickrImages: List<String>,
-    val height: Dimension?,
-    val mass: Mass?
-)
-
-data class Dimension(val meters: Float)
-data class Mass(val kg: Long)
-
-
-// Definición de colores principales (simulando los del JSX/Tailwind)
-val PrimaryPurple = Color(0xFF6750A4) // Similar a #6750a4
-val BackgroundDark = Color(0xFF1E1E32) // Similar a #1e1e32
-val TextGray = Color(0xFF9E9E9E)
 
 /**
  * Componente que representa la tarjeta de un cohete.
@@ -69,10 +49,11 @@ fun RocketCard(
     onRocketClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Estado para manejar la animación de hover/elevación
+    val spaceColors = SpaceTheme.colors
+    val colorScheme = MaterialTheme.colorScheme
+
     var isHovered by remember { mutableStateOf(false) }
 
-    // Animación para la escala de la imagen y la elevación de la tarjeta
     val scale by animateFloatAsState(
         targetValue = if (isHovered) 1.07f else 1.0f,
         animationSpec = tween(700)
@@ -81,14 +62,9 @@ fun RocketCard(
         targetValue = if (isHovered) 16f else 0f,
         animationSpec = tween(500)
     )
-    val translationY by animateFloatAsState(
-        targetValue = if (isHovered) (-8).dp.value else 0f,
-        animationSpec = tween(500)
-    )
-
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundDark.copy(alpha = 0.9f)),
+        colors = CardDefaults.cardColors(containerColor = spaceColors.surfaceCard.copy(alpha = 0.9f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
             .fillMaxWidth()
@@ -96,25 +72,21 @@ fun RocketCard(
             .shadow(
                 elevation = elevation.dp,
                 shape = RoundedCornerShape(24.dp),
-                ambientColor = PrimaryPurple.copy(alpha = 0.2f),
-                spotColor = PrimaryPurple.copy(alpha = 0.1f)
+                ambientColor = colorScheme.primary.copy(alpha = 0.2f),
+                spotColor = colorScheme.primary.copy(alpha = 0.1f)
             )
-//            .graphicsLayer {
-//                translationY = translationY
-//            }
             .clip(RoundedCornerShape(24.dp))
             .clickable { onRocketClick(rocket.id) }
             .padding(1.dp) // Simula el borde
             .background(
-                color = if (isHovered) PrimaryPurple.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.05f),
+                color = if (isHovered) colorScheme.primary.copy(alpha = 0.3f) else spaceColors.surfaceOverlay,
                 shape = RoundedCornerShape(24.dp)
             )
-            .padding(1.dp) // Ajuste fino para el efecto de borde
+            .padding(1.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // Simulación de "hover" solo con la elevación y el scale, ya que Compose no tiene un hover nativo de escritorio para móvil
                 .onFocusChanged { isHovered = it.isFocused }
         ) {
             // Contenedor de la Imagen
@@ -148,20 +120,12 @@ fun RocketCard(
                                 colors = listOf(
                                     Color.Transparent,
                                     Color.Transparent,
-                                    BackgroundDark.copy(alpha = 0.9f)
+                                    spaceColors.surfaceCard.copy(alpha = 0.9f)
                                 ),
                                 startY = 0f,
                                 endY = Float.POSITIVE_INFINITY
                             )
                         )
-                )
-
-                // Insignia de Estado
-                RocketStatusBadge(
-                    isActive = rocket.active,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
                 )
             }
 
@@ -171,7 +135,7 @@ fun RocketCard(
                     text = rocket.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (isHovered) PrimaryPurple else Color.White,
+                    color = if (isHovered) colorScheme.primary else spaceColors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -181,7 +145,7 @@ fun RocketCard(
                 Text(
                     text = rocket.description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextGray,
+                    color = spaceColors.textSecondary,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -197,14 +161,14 @@ fun RocketCard(
                     StatItem(
                         icon = Icons.Default.Height,
                         label = stringResource(R.string.stat_height),
-                        value = "${rocket.height?.meters?.toInt() ?: "?"}m",
+                        value = "${rocket.heightMeters}m",
                         modifier = Modifier.weight(1f)
                     )
                     // Masa
                     StatItem(
                         icon = Icons.Default.Scale,
                         label = stringResource(R.string.stat_mass),
-                        value = "${(rocket.mass?.kg?.toFloat() ?: 0f) / 1000f}t",
+                        value = "${rocket.massKg?.let { it.toFloat() / 1000f } ?: "?"}t",
                         modifier = Modifier.weight(1f)
                     )
                     // Primer Vuelo
@@ -228,7 +192,7 @@ fun RocketCard(
                     Text(
                         text = stringResource(R.string.cost_per_launch, costInMillions),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextGray
+                        color = spaceColors.textSecondary
                     )
 
                     Row(
@@ -239,12 +203,12 @@ fun RocketCard(
                             text = stringResource(R.string.view_details),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
-                            color = PrimaryPurple
+                            color = colorScheme.primary
                         )
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowRight,
                             contentDescription = null,
-                            tint = PrimaryPurple,
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -255,85 +219,46 @@ fun RocketCard(
 }
 
 /**
- * Insignia de estado (Active/Retired)
- */
-@Composable
-fun RocketStatusBadge(isActive: Boolean, modifier: Modifier = Modifier) {
-    val (color, icon, text) = if (isActive) {
-        Triple(Color(0xFF4CAF50), Icons.Default.CheckCircle, stringResource(R.string.status_active))
-    } else {
-        Triple(Color(0xFF9E9E9E), Icons.Default.Close, stringResource(R.string.status_retired))
-    }
-
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(color.copy(alpha = 0.2f))
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null, // Ícono decorativo
-            tint = color,
-            modifier = Modifier.size(12.dp)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-/**
- * Elemento de estadística individual
+ * Stat element used in RocketCard to display an icon, label, and value.
  */
 @Composable
 fun StatItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
+    val spaceColors = SpaceTheme.colors
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+            .background(spaceColors.surfaceOverlay, RoundedCornerShape(16.dp))
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = PrimaryPurple,
+            tint = colorScheme.primary,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = TextGray
+            color = spaceColors.textSecondary
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            color = Color.White
+            color = spaceColors.textPrimary
         )
     }
 }
 
-// --- Preview ---
 @Preview(showBackground = true)
 @Composable
 fun PreviewRocketCard() {
-    // Necesitas un tema definido para que el preview se vea bien
-    MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = PrimaryPurple,
-            background = BackgroundDark,
-            surface = BackgroundDark
-        )
-    ) {
-        Surface(color = BackgroundDark) {
+    SpaceAppsTheme(darkTheme = true) {
+        Surface(color = MaterialTheme.colorScheme.background) {
             RocketCard(
                 rocket = Rocket(
                     id = "falcon9",
@@ -343,8 +268,8 @@ fun PreviewRocketCard() {
                     costPerLaunch = 67000000,
                     firstFlight = "2010-06-04",
                     flickrImages = listOf("https://farm1.staticflickr.com/929/28787338307_3453a17f9e_b.jpg"),
-                    height = Dimension(70.0f),
-                    mass = Mass(549054)
+                    heightMeters = 70.0,
+                    massKg = 549054
                 ),
                 onRocketClick = {}
             )
@@ -352,52 +277,25 @@ fun PreviewRocketCard() {
     }
 }
 
-
-// --- DATOS SIMULADOS (MOCK) ---
-
-val mockRockets = listOf(
-    Rocket(
-        id = "falcon_9",
-        name = "Falcon 9",
-        description = "Cohete orbital reutilizable de dos etapas diseñado y fabricado por SpaceX.",
-        active = true,
-        costPerLaunch = 67000000, // 67 millones
-        firstFlight = "2010-06-04",
-        flickrImages = listOf("https://images2.imgbox.com/3c/0e/T8iJcSN3_o.png"),
-        height = Dimension(70.0f),
-        mass = Mass(549054) // 549 toneladas
-    ),
-    Rocket(
-        id = "falcon_heavy",
-        name = "Falcon Heavy",
-        description = "El cohete operativo más poderoso del mundo, compuesto por tres núcleos Falcon 9.",
-        active = true,
-        costPerLaunch = 97000000, // 97 millones
-        firstFlight = "2018-02-06",
-        flickrImages = listOf("https://farm5.staticflickr.com/4599/38583829295_581f34dd84_b.jpg"),
-        height = Dimension(70.0f),
-        mass = Mass(1420788) // 1420 toneladas
-    ),
-    Rocket(
-        id = "starship",
-        name = "Starship",
-        description = "Vehículo de lanzamiento de próxima generación totalmente reutilizable, diseñado para transportar humanos a Marte.",
-        active = true,
-        costPerLaunch = 2000000, // 2 millones (objetivo)
-        firstFlight = "2023-04-20",
-        flickrImages = listOf("https://farm8.staticflickr.com/7867/46571545625_753a80693a_b.jpg"),
-        height = Dimension(120.0f),
-        mass = Mass(5000000) // 5000 toneladas
-    ),
-    Rocket(
-        id = "falcon_1",
-        name = "Falcon 1",
-        description = "Primer cohete de combustible líquido lanzado a órbita desarrollado por SpaceX. Retirado.",
-        active = false,
-        costPerLaunch = 6700000, // 6.7 millones
-        firstFlight = "2006-03-24",
-        flickrImages = listOf("https://images2.imgbox.com/44/1a/06j6chIz_o.png"),
-        height = Dimension(22.25f),
-        mass = Mass(38560) // 38 toneladas
-    )
-)
+@Preview(showBackground = true, name = "Light Mode")
+@Composable
+fun PreviewRocketCardLight() {
+    SpaceAppsTheme(darkTheme = false) {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            RocketCard(
+                rocket = Rocket(
+                    id = "falcon9",
+                    name = "Falcon 9",
+                    description = "Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX.",
+                    active = true,
+                    costPerLaunch = 67000000,
+                    firstFlight = "2010-06-04",
+                    flickrImages = listOf("https://farm1.staticflickr.com/929/28787338307_3453a17f9e_b.jpg"),
+                    heightMeters = 70.0,
+                    massKg = 549054
+                ),
+                onRocketClick = {}
+            )
+        }
+    }
+}

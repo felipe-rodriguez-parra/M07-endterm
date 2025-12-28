@@ -1,10 +1,9 @@
 package com.example.spaceapps.ui.pages
 
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,45 +13,57 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.spaceapps.R // Necesitarás este archivo en tu proyecto
-import com.example.spaceapps.ui.theme.SpaceAppsTheme // Tu tema de Compose
+import com.example.spaceapps.R
+import com.example.spaceapps.ui.theme.SpaceAppsTheme
+import com.example.spaceapps.ui.theme.SpaceBackground
+import com.example.spaceapps.ui.theme.SpaceColors
+import com.example.spaceapps.ui.theme.SpaceTheme
 
 /**
- * Pantalla de Splash. Muestra un título y navega automáticamente.
- * @param onTimeout función que se llama después del tiempo de espera de 2 segundos.
- */
+  * Splash screen. Shows a title and navigates automatically.
+  * @param onSplashFinished function called after the 2-second delay.
+  */
 @Composable
-fun Splash(onTimeout: () -> Unit) {
-    // Ejecuta una función después de 2 segundos
+fun Splash(onSplashFinished: () -> Unit) {
+    // Execute function 1.5 seconds after entering the screen
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(1500) // 2000ms = 2 segundos
-        onTimeout()
+        kotlinx.coroutines.delay(1500)
+        onSplashFinished()
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background // Usa el color de fondo del tema
-    ) {
+    val colors = SpaceTheme.colors
+
+    SpaceBackground(showDecorativeCircles = true) {
         Box(
             modifier = Modifier.fillMaxSize().padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Placeholder para el Logo (opcional)
-                /*
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo),
-                    contentDescription = stringResource(R.string.app_name),
-                    modifier = Modifier.size(128.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                */
-
+                Row {
+                    Text(
+                        text = "Space",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colors.textPrimary
+                    )
+                    Text(
+                        text = "X",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = SpaceColors.PrimaryLight
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = stringResource(R.string.app_name), // "SpaceApps"
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.textMuted
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                    strokeWidth = 3.dp
                 )
             }
         }
@@ -63,6 +74,6 @@ fun Splash(onTimeout: () -> Unit) {
 @Composable
 fun PreviewSplash() {
     SpaceAppsTheme {
-        Splash(onTimeout = {})
+        Splash(onSplashFinished = {})
     }
 }

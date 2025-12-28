@@ -1,130 +1,177 @@
 package com.example.spaceapps.ui.pages
 
-
+import android.app.Application
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.spaceapps.R
-import com.example.spaceapps.ui.components.Rocket
 import com.example.spaceapps.ui.components.RocketCard
-import com.example.spaceapps.ui.components.mockRockets
+import com.example.spaceapps.ui.viewmodel.RocketListViewModel
+import com.example.spaceapps.ui.viewmodel.RocketListViewModelFactory
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
+import com.example.spaceapps.domain.model.Rocket
+import com.example.spaceapps.ui.theme.SpaceAppsTheme
+import com.example.spaceapps.ui.theme.SpaceBackground
+import com.example.spaceapps.ui.theme.SpaceColors
+import com.example.spaceapps.ui.theme.SpaceTheme
+import com.example.spaceapps.ui.viewmodel.RocketListUiState
 
-// Ejemplo de estado de pantalla (Carga, Éxito, Error)
-sealed class UiState {
-    object Loading : UiState()
-    data class Success(val rockets: List<Rocket>) : UiState()
-    data class Error(val message: String) : UiState()
-}
 
-/**
- * Pantalla principal de la aplicación, muestra la lista de cohetes.
- * @param onRocketClick Función para navegar a la vista de detalle.
- * @param onLogout Función para cerrar sesión.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Home(onRocketClick: (String) -> Unit, onLogout: () -> Unit) {
-
-    // Usar estado en la vida real (ejemplo simple, usar ViewModel en producción)
-    var currentState by remember { mutableStateOf<UiState>(UiState.Loading) }
-    var searchText by remember { mutableStateOf("") }
-
-    // Define el CoroutineScope ligado al ciclo de vida de Home
-    val scope = rememberCoroutineScope()
-
-    // Simular carga de datos (usar Retrofit/Room en el MVP real)
-    LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(1500) // Simular carga de red
-        currentState = UiState.Success(mockRockets)
+    val context = LocalContext.current
+    val app = (context.applicationContext as? Application)
+    val viewModel: RocketListViewModel? = app?.let {
+        androidx.lifecycle.viewmodel.compose.viewModel(
+            factory = RocketListViewModelFactory(it)
+        )
     }
 
-    // Filtrar cohetes
-    val filteredRockets = when (currentState) {
-        is UiState.Success -> {
-            (currentState as UiState.Success).rockets.filter {
-                it.name.contains(searchText, ignoreCase = true)
-            }
-        }
-        else -> emptyList()
+    val state by viewModel?.state?.collectAsStateWithLifecycle() ?: remember {
+        mutableStateOf(
+            RocketListUiState(
+                isLoading = false,
+                error = null,
+                query = "",
+                rockets = emptyList()
+            )
+        )
+    }
+    val searchQuery = state.query
+    val filtered = state.rockets.filter { r ->
+        r.name.contains(searchQuery, ignoreCase = true) || r.description.contains(searchQuery, ignoreCase = true)
     }
 
-    Scaffold(
-        topBar = {
+    val colors = SpaceTheme.colors
+
+    SpaceBackground {
+        Column {
+            // Header
             TopAppBar(
-                title = { Text(stringResource(R.string.home_title)) },
-                actions = {
-                    Button(onClick = onLogout, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                        Text(stringResource(R.string.button_logout))
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Campo de Búsqueda
-            OutlinedTextField(
-                value = searchText,
-                onValueChange = { searchText = it },
-                label = { Text(stringResource(R.string.search_rocket_placeholder)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            // Contenido basado en el estado
-            when (currentState) {
-                UiState.Loading -> {
-                    // Tarea #4 - Estado de carga
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(64.dp)
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Space",
+                            color = colors.textPrimary,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "X",
+                            color = SpaceColors.PrimaryLight,
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
-                }
-                is UiState.Error -> {
-                    // Tarea #4 - Estado de error con reintento
-                    val errorMessage = (currentState as UiState.Error).message
-                    ErrorState(
-                        message = errorMessage,
-                        onRetry = {
-                            // Lógica de reintento
-                            currentState = UiState.Loading
-                            // Simular reintento de carga
-                            // Simular carga de datos (usar Retrofit/Room en el MVP real)
-                            // También usa 'scope' para la carga inicial si lo prefieres, o mantén LaunchedEffect
-                            LaunchedEffect(Unit) {
-                                kotlinx.coroutines.delay(1500) // Simular carga de red
-                                currentState = UiState.Success(mockRockets)
-                            }
-                        }
+                },
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = colors.iconLight)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = colors.topAppBarBackground
+                )
+            )
+
+            // Content
+            Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Hero
+                Column(modifier = Modifier.padding(bottom = 20.dp)) {
+                    Box {
+                        Text(
+                            text = "Explore Rockets",
+                            color = colors.textPrimary,
+                            fontSize = 34.sp,
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Discover the incredible fleet of SpaceX rockets that are revolutionizing space exploration.",
+                        color = colors.textMuted,
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                is UiState.Success -> {
-                    if (filteredRockets.isEmpty()) {
-                        // Tarea #4 - Estado Vacío (Sin resultados)
-                        EmptyState(message = stringResource(R.string.empty_results_message))
-                    } else {
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+
+                // Search
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel?.onQueryChange(it) },
+                    placeholder = { Text(stringResource(R.string.search_rocket_placeholder), color = colors.textMuted) },
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = colors.textMuted)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = colors.surfaceOverlay,
+                        unfocusedContainerColor = colors.surfaceOverlay,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary,
+                        focusedPlaceholderColor = colors.textMuted,
+                        unfocusedPlaceholderColor = colors.textMuted,
+                        focusedLeadingIconColor = colors.textMuted,
+                        unfocusedLeadingIconColor = colors.textMuted
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                when {
+                    state.isLoading && state.rockets.isEmpty() -> {
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Loading rockets...", color = colors.textMuted)
+                        }
+                    }
+
+                    state.error != null && state.rockets.isEmpty() -> {
+                        ErrorState(message = state.error ?: stringResource(id = R.string.action_retry), onRetry = { viewModel?.refresh() })
+                    }
+
+                    filtered.isEmpty() -> {
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(imageVector = Icons.Default.Menu, contentDescription = null, tint = colors.iconMuted, modifier = Modifier.size(64.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(stringResource(R.string.empty_results_message), color = colors.textMuted)
+                        }
+                    }
+
+                    else -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 220.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxHeight()
                         ) {
-                            items(filteredRockets.size) { index ->
+                            itemsIndexed(filtered) { _, rocket ->
                                 RocketCard(
-                                    rocket = filteredRockets[index],
+                                    rocket = rocket.toUi(),
                                     onRocketClick = onRocketClick,
-                                    // Simular el animationDelay de JSX (Tarea #2)
                                     modifier = Modifier
                                 )
                             }
@@ -136,32 +183,8 @@ fun Home(onRocketClick: (String) -> Unit, onLogout: () -> Unit) {
     }
 }
 
-
 @Composable
-fun EmptyState(message: String) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            // Placeholder de icono
-            imageVector = Icons.Filled.Menu,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-    }
-}
-
-@Composable
-fun ErrorState(message: String, onRetry: @Composable () -> Unit) {
+fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -173,7 +196,7 @@ fun ErrorState(message: String, onRetry: @Composable () -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        Button(onClick = onRetry as () -> Unit) {
+        Button(onClick = onRetry) {
             Text(stringResource(R.string.action_retry))
         }
     }
@@ -182,19 +205,20 @@ fun ErrorState(message: String, onRetry: @Composable () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewHome() {
-    // Definición de mockRockets (debería estar en el archivo del componente real)
-    val mockRockets = listOf(
-        Rocket("f1", "Falcon 1", "Rocket 1 description...", true, 6700000, "2006-03-24", listOf(""), com.example.spaceapps.ui.components.Dimension(18.3f), com.example.spaceapps.ui.components.Mass(30167)),
-        Rocket("f9", "Falcon 9", "Rocket 9 description...", true, 67000000, "2010-06-04", listOf(""), com.example.spaceapps.ui.components.Dimension(70f), com.example.spaceapps.ui.components.Mass(549054))
-    )
-
-    // Asignar el mock para el preview
-    com.example.spaceapps.ui.components.mockRockets
-    Home(onRocketClick = {}, onLogout = {})
+    SpaceAppsTheme {
+        Home(onRocketClick = {}, onLogout = {})
+    }
 }
 
-// Datos simulados para el Preview de la Home
-private var mockRockets = listOf(
-    Rocket("f1", "Falcon 1", "Rocket 1 description...", true, 6700000, "2006-03-24", listOf(""), com.example.spaceapps.ui.components.Dimension(18.3f), com.example.spaceapps.ui.components.Mass(30167)),
-    Rocket("f9", "Falcon 9", "Rocket 9 description...", true, 67000000, "2010-06-04", listOf(""), com.example.spaceapps.ui.components.Dimension(70f), com.example.spaceapps.ui.components.Mass(549054))
-)
+private fun Rocket.toUi(): Rocket =
+    Rocket(
+        id = id,
+        name = name,
+        description = description,
+        active = active,
+        costPerLaunch = costPerLaunch,
+        firstFlight = firstFlight,
+        flickrImages = flickrImages.ifEmpty { listOf("https://images.unsplash.com/photo-1516849841032-87cbac4d88f7?w=800") },
+        heightMeters = heightMeters,
+        massKg = massKg
+    )
